@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roleta Premiada</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h2 { margin-top: 20px; }
+  .wheel-container {
+    position: relative;
+    display: inline-block;
+    margin-top: 20px;
+  }
+  canvas {
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+  .arrow {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 25px solid red;
+  }
+  #spinBtn {
+    margin: 20px;
+    padding: 12px 24px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #4CAF50;
+    color: #fff;
+    cursor: pointer;
+  }
+  #spinBtn:disabled { background: #888; cursor: not-allowed; }
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    width: 85%; max-width: 320px;
+  }
+  input {
+    padding: 10px;
+    width: 90%;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #007bff;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .close-btn { margin-top: 12px; background: #000; color: #fff; }
+</style>
+</head>
+<body>
+<h2>Roleta Premiada</h2>
+
+<div class="wheel-container">
+  <canvas id="wheel" width="320" height="320"></canvas>
+  <div class="arrow"></div>
+</div>
+
+<button id="spinBtn">Girar</button>
+
+<div id="phoneModal" class="modal">
+  <div class="modal-content">
+    <h3>Digite seu telefone</h3>
+    <input id="phoneInput" placeholder="DDD + número" maxlength="13" />
+    <button id="savePhoneBtn">Salvar</button>
+  </div>
+</div>
+
+<div id="resultModal" class="modal">
+  <div class="modal-content">
+    <h2 id="resultTitle" style="margin:6px 0;font-size:20px;color:#000"></h2>
+    <div id="qrcode" style="margin:10px auto;width:120px;height:120px;"></div>
+    <button class="close-btn" id="closeRes">Fechar</button>
+  </div>
+</div>
+
+<script>
+const prizes = [
+  {label:'DESIGN SIMPLES 50%', color:'#000000'},
+  {label:'FIO A FIO 50%', color:'#FFD700'},
+  {label:'SHADOW LINE 50%', color:'#000000'},
+  {label:'DESIGN SIMPLES 100%', color:'#FFD700'},
+  {label:'FIO A FIO 100%', color:'#000000'},
+  {label:'SHADOW LINE 100%', color:'#FFD700'}
+];
+
+const prizesSequence = [
+  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'FIO A FIO 50%','FIO A FIO 50%','FIO A FIO 50%',
+  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'SHADOW LINE 50%','SHADOW LINE 50%',
+  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'FIO A FIO 50%','FIO A FIO 50%','FIO A FIO 50%',
+  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'FIO A FIO 50%','FIO A FIO 50%',
+  'SHADOW LINE 100%',
+  'DESIGN SIMPLES 100%','DESIGN SIMPLES 100%',
+  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'SHADOW LINE 50%','SHADOW LINE 50%',
+  'FIO A FIO 100%',
+  'FIO A FIO 50%','FIO A FIO 50%',
+  'DESIGN SIMPLES 100%','DESIGN SIMPLES 100%','DESIGN SIMPLES 100%',
+  'SHADOW LINE 50%',
+  'DESIGN SIMPLES 100%','DESIGN SIMPLES 100%',
+  'FIO A FIO 100%',
+  'SHADOW LINE 100%',
+  'FIO A FIO 100%'
+];
+
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const cx = canvas.width / 2;
+const cy = canvas.height / 2;
+const radius = Math.min(cx, cy) - 8;
+let spinning = false;
+let currentRotation = 0;
+
+function drawWheel(rotation = 0) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const arc = (2 * Math.PI) / prizes.length;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  for (let i = 0; i < prizes.length; i++) {
+    const start = i * arc;
+    const end = start + arc;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, radius, start, end);
+    ctx.fillStyle = prizes[i].color;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.rotate(start + arc / 2);
+    ctx.translate(0, -radius * 0.7);
+    ctx.rotate(Math.PI / 2);
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = prizes[i].color === '#FFD700' ? '#000' : '#FFD700';
+    ctx.textAlign = 'center';
+    ctx.fillText(prizes[i].label, 0, 0);
+    ctx.restore();
+  }
+  ctx.fillStyle = 'red';
+  ctx.beginPath();
+  ctx.arc(0, 0, 8, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.restore();
+}
+drawWheel();
+
+document.getElementById('spinBtn').addEventListener('click', () => {
+  const phone = localStorage.getItem('wheelPhone');
+  if (!phone) {
+    document.getElementById('phoneModal').style.display = 'flex';
+    return;
+  }
+
+  const usedPhones = JSON.parse(localStorage.getItem('usedPhones') || '[]');
+  if (usedPhones.includes(phone)) {
+    alert('Este telefone já participou!');
+    return;
+  }
+
+  if (spinning) return;
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+
+  let globalIndex = parseInt(localStorage.getItem('globalIndex') || '0');
+  const prizeLabel = prizesSequence[globalIndex % prizesSequence.length];
+  globalIndex++;
+  localStorage.setItem('globalIndex', globalIndex);
+
+  const prizeIndex = prizes.findIndex(p => p.label === prizeLabel);
+  const arc = 360 / prizes.length;
+  const targetAngle = 270 - (prizeIndex * arc + arc / 2);
+  const totalRot = 360 * 5 + targetAngle;
+  const startRot = currentRotation;
+  const start = performance.now();
+  const duration = 4000;
+
+  function animate(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const angle = startRot + ease * (totalRot - startRot);
+    drawWheel(angle * Math.PI / 180);
+    if (t < 1) requestAnimationFrame(animate);
+    else {
+      spinning = false;
+      currentRotation = angle % 360;
+      usedPhones.push(phone);
+      localStorage.setItem('usedPhones', JSON.stringify(usedPhones));
+      showResult(prizeLabel);
+    }
+  }
+  requestAnimationFrame(animate);
+});
+
+function showResult(prize) {
+  const modal = document.getElementById('resultModal');
+  document.getElementById('resultTitle').textContent = prize;
+  modal.style.display = 'flex';
+  document.getElementById('qrcode').innerHTML = '';
+  new QRCode(document.getElementById('qrcode'), {
+    text: window.location.href,
+    width: 120,
+    height: 120
+  });
+  const owner = "5577998652620";
+  const phone = localStorage.getItem('wheelPhone');
+  const msg = `Olá! Acabei de ganhar na roleta!\nPrêmio: ${prize}\nTelefone: ${phone}`;
+  setTimeout(() => {
+    window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank");
+  }, 600);
+}
+
+document.getElementById('closeRes').addEventListener('click', () => {
+  document.getElementById('resultModal').style.display = 'none';
+});
+
+document.getElementById('savePhoneBtn').addEventListener('click', () => {
+  const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
+  if (!/^\d{10,13}$/.test(phone)) {
+    alert('Digite um número válido (somente dígitos).');
+    return;
+  }
+  localStorage.setItem('wheelPhone', phone);
+  document.getElementById('phoneModal').style.display = 'none';
+  alert('Telefone salvo! Agora você pode girar a roleta.');
+});
+</script>
+</body>
+</html>
