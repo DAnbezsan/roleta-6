@@ -94,7 +94,6 @@
 
 <button id="spinBtn">Girar</button>
 
-<!-- Modal Telefone -->
 <div id="phoneModal" class="modal">
   <div class="modal-content">
     <h3>Digite seu telefone</h3>
@@ -103,7 +102,6 @@
   </div>
 </div>
 
-<!-- Modal Resultado -->
 <div id="resultModal" class="modal">
   <div class="modal-content">
     <h2 id="resultTitle" style="margin:6px 0;font-size:20px;color:#000"></h2>
@@ -113,7 +111,6 @@
 </div>
 
 <script>
-// === CONFIGURAÇÃO ===
 const prizes = [
   {label:'DESIGN SIMPLES 50%', color:'#000'},
   {label:'FIO A FIO 50%', color:'#FFD700'},
@@ -123,7 +120,6 @@ const prizes = [
   {label:'SHADOW LINE 100%', color:'#FFD700'}
 ];
 
-// 45 prêmios fixos
 const prizesSequence = [
   'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
   'FIO A FIO 50%','FIO A FIO 50%','FIO A FIO 50%',
@@ -152,7 +148,6 @@ const ctx = canvas.getContext("2d");
 const cx = canvas.width / 2;
 const cy = canvas.height / 2;
 const r = cx - 10;
-
 let spinning = false;
 let currentRotation = 0;
 
@@ -162,19 +157,15 @@ function drawWheel(rotation = 0) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(rotation);
-
   for (let i = 0; i < prizes.length; i++) {
     const start = i * arc;
     const end = start + arc;
-
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, r, start, end);
     ctx.fillStyle = prizes[i].color;
     ctx.fill();
     ctx.stroke();
-
-    // Texto fixo e legível
     ctx.save();
     ctx.rotate(start + arc / 2);
     ctx.translate(r * 0.65, 0);
@@ -185,8 +176,6 @@ function drawWheel(rotation = 0) {
     ctx.fillText(prizes[i].label, 0, 0);
     ctx.restore();
   }
-
-  // centro
   ctx.beginPath();
   ctx.fillStyle = "red";
   ctx.arc(0, 0, 10, 0, 2 * Math.PI);
@@ -201,22 +190,18 @@ document.getElementById("spinBtn").addEventListener("click", () => {
     document.getElementById("phoneModal").style.display = "flex";
     return;
   }
-
   const usedPhones = JSON.parse(localStorage.getItem("usedPhones") || "[]");
   if (usedPhones.includes(phone)) {
     alert("Este telefone já participou!");
     return;
   }
-
   if (spinning) return;
   spinning = true;
   document.getElementById("spinBtn").disabled = true;
-
   let globalIndex = parseInt(localStorage.getItem("globalIndex") || "0");
   const prizeLabel = prizesSequence[globalIndex % prizesSequence.length];
   globalIndex++;
   localStorage.setItem("globalIndex", globalIndex);
-
   const prizeIndex = prizes.findIndex(p => p.label === prizeLabel);
   const arc = 360 / prizes.length;
   const targetAngle = 270 - (prizeIndex * arc + arc / 2);
@@ -224,7 +209,6 @@ document.getElementById("spinBtn").addEventListener("click", () => {
   const startRot = currentRotation;
   const duration = 4000;
   const startTime = performance.now();
-
   function animate(now) {
     const t = Math.min(1, (now - startTime) / duration);
     const ease = 1 - Math.pow(1 - t, 3);
@@ -255,7 +239,7 @@ function showResult(prize) {
   });
   const owner = "5577998652620";
   const phone = localStorage.getItem("wheelPhone");
-  const msg = `Olá! Acabei de ganhar na roleta!\\nPrêmio: ${prize}\\nTelefone: ${phone}`;
+  const msg = `Olá! Acabei de ganhar na roleta!\nPrêmio: ${prize}\nTelefone: ${phone}`;
   setTimeout(() => {
     window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank");
   }, 500);
@@ -266,8 +250,8 @@ document.getElementById("closeRes").addEventListener("click", () => {
 });
 
 document.getElementById("savePhoneBtn").addEventListener("click", () => {
-  const phone = document.getElementById("phoneInput").value.replace(/\\D/g, "");
-  if (!/^\\d{10,13}$/.test(phone)) {
+  const phone = document.getElementById("phoneInput").value.replace(/\D/g, "");
+  if (!/^\d{10,13}$/.test(phone)) {
     alert("Digite um número válido (somente dígitos).");
     return;
   }
