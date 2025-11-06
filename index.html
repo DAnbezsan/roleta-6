@@ -94,6 +94,7 @@
 
 <button id="spinBtn">Girar</button>
 
+<!-- Modal Telefone -->
 <div id="phoneModal" class="modal">
   <div class="modal-content">
     <h3>Digite seu telefone</h3>
@@ -102,6 +103,7 @@
   </div>
 </div>
 
+<!-- Modal Resultado -->
 <div id="resultModal" class="modal">
   <div class="modal-content">
     <h2 id="resultTitle" style="margin:6px 0;font-size:20px;color:#000"></h2>
@@ -111,15 +113,17 @@
 </div>
 
 <script>
+// === CONFIGURAÇÃO ===
 const prizes = [
-  {label:'DESIGN SIMPLES 50%', color:'#000000'},
+  {label:'DESIGN SIMPLES 50%', color:'#000'},
   {label:'FIO A FIO 50%', color:'#FFD700'},
-  {label:'SHADOW LINE 50%', color:'#000000'},
+  {label:'SHADOW LINE 50%', color:'#000'},
   {label:'DESIGN SIMPLES 100%', color:'#FFD700'},
-  {label:'FIO A FIO 100%', color:'#000000'},
+  {label:'FIO A FIO 100%', color:'#000'},
   {label:'SHADOW LINE 100%', color:'#FFD700'}
 ];
 
+// 45 prêmios fixos
 const prizesSequence = [
   'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
   'FIO A FIO 50%','FIO A FIO 50%','FIO A FIO 50%',
@@ -143,126 +147,133 @@ const prizesSequence = [
   'FIO A FIO 100%'
 ];
 
-const canvas = document.getElementById('wheel');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
 const cx = canvas.width / 2;
 const cy = canvas.height / 2;
-const radius = Math.min(cx, cy) - 8;
+const r = cx - 10;
+
 let spinning = false;
 let currentRotation = 0;
 
 function drawWheel(rotation = 0) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   const arc = (2 * Math.PI) / prizes.length;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(rotation);
+
   for (let i = 0; i < prizes.length; i++) {
     const start = i * arc;
     const end = start + arc;
+
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.arc(0, 0, radius, start, end);
+    ctx.arc(0, 0, r, start, end);
     ctx.fillStyle = prizes[i].color;
     ctx.fill();
     ctx.stroke();
 
+    // Texto fixo e legível
     ctx.save();
     ctx.rotate(start + arc / 2);
-    ctx.translate(0, -radius * 0.7);
+    ctx.translate(r * 0.65, 0);
     ctx.rotate(Math.PI / 2);
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillStyle = prizes[i].color === '#FFD700' ? '#000' : '#FFD700';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = prizes[i].color === "#FFD700" ? "#000" : "#FFD700";
+    ctx.font = "bold 14px sans-serif";
+    ctx.textAlign = "center";
     ctx.fillText(prizes[i].label, 0, 0);
     ctx.restore();
   }
-  ctx.fillStyle = 'red';
+
+  // centro
   ctx.beginPath();
-  ctx.arc(0, 0, 8, 0, 2 * Math.PI);
+  ctx.fillStyle = "red";
+  ctx.arc(0, 0, 10, 0, 2 * Math.PI);
   ctx.fill();
   ctx.restore();
 }
 drawWheel();
 
-document.getElementById('spinBtn').addEventListener('click', () => {
-  const phone = localStorage.getItem('wheelPhone');
+document.getElementById("spinBtn").addEventListener("click", () => {
+  const phone = localStorage.getItem("wheelPhone");
   if (!phone) {
-    document.getElementById('phoneModal').style.display = 'flex';
+    document.getElementById("phoneModal").style.display = "flex";
     return;
   }
 
-  const usedPhones = JSON.parse(localStorage.getItem('usedPhones') || '[]');
+  const usedPhones = JSON.parse(localStorage.getItem("usedPhones") || "[]");
   if (usedPhones.includes(phone)) {
-    alert('Este telefone já participou!');
+    alert("Este telefone já participou!");
     return;
   }
 
   if (spinning) return;
   spinning = true;
-  document.getElementById('spinBtn').disabled = true;
+  document.getElementById("spinBtn").disabled = true;
 
-  let globalIndex = parseInt(localStorage.getItem('globalIndex') || '0');
+  let globalIndex = parseInt(localStorage.getItem("globalIndex") || "0");
   const prizeLabel = prizesSequence[globalIndex % prizesSequence.length];
   globalIndex++;
-  localStorage.setItem('globalIndex', globalIndex);
+  localStorage.setItem("globalIndex", globalIndex);
 
   const prizeIndex = prizes.findIndex(p => p.label === prizeLabel);
   const arc = 360 / prizes.length;
   const targetAngle = 270 - (prizeIndex * arc + arc / 2);
-  const totalRot = 360 * 5 + targetAngle;
+  const totalRotation = 360 * 5 + targetAngle;
   const startRot = currentRotation;
-  const start = performance.now();
   const duration = 4000;
+  const startTime = performance.now();
 
   function animate(now) {
-    const t = Math.min(1, (now - start) / duration);
+    const t = Math.min(1, (now - startTime) / duration);
     const ease = 1 - Math.pow(1 - t, 3);
-    const angle = startRot + ease * (totalRot - startRot);
-    drawWheel(angle * Math.PI / 180);
+    const angle = startRot + ease * (totalRotation - startRot);
+    drawWheel((angle * Math.PI) / 180);
     if (t < 1) requestAnimationFrame(animate);
     else {
       spinning = false;
       currentRotation = angle % 360;
       usedPhones.push(phone);
-      localStorage.setItem('usedPhones', JSON.stringify(usedPhones));
+      localStorage.setItem("usedPhones", JSON.stringify(usedPhones));
       showResult(prizeLabel);
+      document.getElementById("spinBtn").disabled = false;
     }
   }
   requestAnimationFrame(animate);
 });
 
 function showResult(prize) {
-  const modal = document.getElementById('resultModal');
-  document.getElementById('resultTitle').textContent = prize;
-  modal.style.display = 'flex';
-  document.getElementById('qrcode').innerHTML = '';
-  new QRCode(document.getElementById('qrcode'), {
+  const modal = document.getElementById("resultModal");
+  document.getElementById("resultTitle").textContent = prize;
+  modal.style.display = "flex";
+  document.getElementById("qrcode").innerHTML = "";
+  new QRCode(document.getElementById("qrcode"), {
     text: window.location.href,
     width: 120,
     height: 120
   });
   const owner = "5577998652620";
-  const phone = localStorage.getItem('wheelPhone');
-  const msg = `Olá! Acabei de ganhar na roleta!\nPrêmio: ${prize}\nTelefone: ${phone}`;
+  const phone = localStorage.getItem("wheelPhone");
+  const msg = `Olá! Acabei de ganhar na roleta!\\nPrêmio: ${prize}\\nTelefone: ${phone}`;
   setTimeout(() => {
     window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank");
-  }, 600);
+  }, 500);
 }
 
-document.getElementById('closeRes').addEventListener('click', () => {
-  document.getElementById('resultModal').style.display = 'none';
+document.getElementById("closeRes").addEventListener("click", () => {
+  document.getElementById("resultModal").style.display = "none";
 });
 
-document.getElementById('savePhoneBtn').addEventListener('click', () => {
-  const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
-  if (!/^\d{10,13}$/.test(phone)) {
-    alert('Digite um número válido (somente dígitos).');
+document.getElementById("savePhoneBtn").addEventListener("click", () => {
+  const phone = document.getElementById("phoneInput").value.replace(/\\D/g, "");
+  if (!/^\\d{10,13}$/.test(phone)) {
+    alert("Digite um número válido (somente dígitos).");
     return;
   }
-  localStorage.setItem('wheelPhone', phone);
-  document.getElementById('phoneModal').style.display = 'none';
-  alert('Telefone salvo! Agora você pode girar a roleta.');
+  localStorage.setItem("wheelPhone", phone);
+  document.getElementById("phoneModal").style.display = "none";
+  alert("Telefone salvo! Agora você pode girar a roleta.");
 });
 </script>
 </body>
