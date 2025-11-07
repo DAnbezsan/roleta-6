@@ -92,7 +92,7 @@
         <button id="savePhoneBtn" class="btn">Salvar</button>
         <button id="cancelPhoneBtn" class="btn close-btn">Cancelar</button>
       </div>
-      <p style="font-size:13px;color:#444;margin-top:8px;">Após salvar, clique em <strong>Girar</strong> novamente para iniciar o sorteio.</p>
+      <p style="font-size:13px;color:#444;margin-top:8px;">Após salvar, o sorteio iniciará automaticamente se seu número estiver válido e não tiver participado anteriormente.</p>
     </div>
   </div>
 
@@ -113,17 +113,17 @@
   <div class="info">
     <strong>Como participar:</strong>
     <ol>
-      <li>Clique em <em>Girar</em> — o sistema pedirá seu telefone (mesmo que já tenha salvo).</li>
-      <li>Salve o telefone e em seguida clique em <em>Girar</em> novamente para iniciar o sorteio.</li>
+      <li>Clique em <em>Girar</em>.</li>
+      <li>Informe o telefone (uma vez). Se o telefone já estiver salvo e autorizado, o sorteio inicia automaticamente.</li>
     </ol>
     <p>Regras: cada telefone só pode girar uma vez (exceto ADM). Promoção válida até 10 de janeiro.</p>
   </div>
 
 <script>
 /* ---------------- CONFIG ---------------- */
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIjpHdsFx0TyHRs8YDe7fZlJ0l88SPQRklLu2QTMquIeHvvMuIr01ZRY-8GQi7yzXx/exec";
-const OWNER_WHATSAPP = "SEU_NUMERO_AQUI";      // substitua pelo número internacional sem '+', ex: 5577981633924
-const ADMIN_PHONE = "SEU_NUMERO_ADMIN_AQUI";   // substitua ex: 77998652620
+const GOOGLE_SCRIPT_URL = "PASTE_YOUR_DEPLOYED_WEB_APP_URL_HERE"; // <- coloque aqui o URL do Apps Script (web app)
+const OWNER_WHATSAPP = "5577981633924";
+const ADMIN_PHONE = "5577998652620";
 const ADMIN_TAG = "ADM";
 
 /* ---------------- PRIZES ---------------- */
@@ -251,29 +251,32 @@ drawWheel();
 /* ---------------- LOGIC ---------------- */
 let spinning = false;
 let currentIndex = parseInt(localStorage.getItem('currentIndex')||'0',10);
-let usedPhones = JSON.parse(localStorage.getItem('usedPhones')||'[]');
+
+function normalizePhone(p){
+  if(!p) return '';
+  return p.toString().replace(/\D/g,'').replace(/^55/,'').replace(/^\+/,'');
+}
+
+// normalize usedPhones on load so comparisons are consistent
+let usedPhonesRaw = JSON.parse(localStorage.getItem('usedPhones')||'[]');
+let usedPhones = usedPhonesRaw.map(normalizePhone);
+
 let phoneSavedForThisRound = false;
 
 const ARROW_DEG = 270; // arrow points UP toward center (target sector mid angle at 270deg)
 function degToRad(d){ return d * Math.PI / 180; }
 
-/* SPIN BUTTON FLOW:
-   - click Girar -> open modal (prefill)
-   - save phone -> set phoneSavedForThisRound = true (user must click Girar again to actually spin)
-   - next click Girar (with phoneSavedForThisRound true) -> start spin
-*/
 const spinBtn = document.getElementById('spinBtn');
 spinBtn.addEventListener('click', ()=>{
   if(spinning) return;
-  // if phone saved and modal not open -> start
-  if(phoneSavedForThisRound && document.getElementById('phoneModal').style.display !== 'flex'){
-    const phone = localStorage.getItem('wheelPhone') || '';
-    if(!phone){ alert('Informe o telefone antes de girar.'); phoneSavedForThisRound = false; return; }
-    startSpinWithPhone(phone);
+  const stored = localStorage.getItem('wheelPhone') || '';
+  const normStored = normalizePhone(stored);
+  // if stored phone exists and not used (or is admin) -> start immediately
+  if(normStored && (normStored === normalizePhone(ADMIN_PHONE) || !usedPhones.includes(normStored))){
+    startSpinWithPhone(stored);
     return;
   }
   // otherwise open phone modal
-  const stored = localStorage.getItem('wheelPhone') || '';
   document.getElementById('phoneInput').value = stored;
   document.getElementById('phoneModal').style.display = 'flex';
 });
@@ -289,15 +292,28 @@ document.getElementById('savePhoneBtn').addEventListener('click', ()=>{
   localStorage.setItem('wheelPhone', raw);
   document.getElementById('phoneModal').style.display = 'none';
   phoneSavedForThisRound = true;
-  alert('Telefone salvo. Clique em "Girar" novamente para iniciar o sorteio.');
+  alert('Telefone salvo. Se estiver autorizado, o sorteio iniciará automaticamente.');
+  // attempt to start immediately if valid and not used
+  const norm = normalizePhone(raw);
+  if(norm === normalizePhone(ADMIN_PHONE) || !usedPhones.includes(norm)){
+    startSpinWithPhone(raw);
+  }
 });
 
 /* start spin */
 function startSpinWithPhone(phone){
   if(spinning) return;
-  if(phone !== ADMIN_PHONE && usedPhones.includes(phone)){ alert('Este número já participou da promoção.'); phoneSavedForThisRound = false; return; }
+  const norm = normalizePhone(phone);
+  if(norm !== normalizePhone(ADMIN_PHONE) && usedPhones.includes(norm)){
+    alert('Este número já participou da promoção.');
+    phoneSavedForThisRound = false;
+    return;
+  }
   spinning = true;
   phoneSavedForThisRound = false;
+
+  // ensure currentIndex is number
+  currentIndex = parseInt(localStorage.getItem('currentIndex')||String(currentIndex),10)||0;
 
   const targetIndex = currentIndex % prizesSequence.length;
   const targetLabel = prizesSequence[targetIndex];
@@ -319,9 +335,11 @@ function startSpinWithPhone(phone){
     else {
       spinning = false;
       currentIndex++;
-      if(phone !== ADMIN_PHONE){
-        usedPhones.push(phone);
-        localStorage.setItem('usedPhones', JSON.stringify(usedPhones));
+      // store usedPhones normalized and raw list for compatibility
+      if(normalizePhone(phone) !== normalizePhone(ADMIN_PHONE)){
+        usedPhones.push(normalizePhone(phone));
+        usedPhonesRaw.push(phone.replace(/\D/g,''));
+        localStorage.setItem('usedPhones', JSON.stringify(usedPhonesRaw));
       }
       localStorage.setItem('currentIndex', currentIndex);
       showResult(targetLabel, phone);
@@ -335,8 +353,18 @@ function showResult(label, phone){
   const modal = document.getElementById('resultModal');
   document.getElementById('resultTitle').textContent = label;
   modal.style.display = 'flex';
-  document.getElementById('qrcode').innerHTML = '';
-  new QRCode(document.getElementById("qrcode"), { text: window.location.href, width:120, height:120 });
+  const qrEl = document.getElementById('qrcode');
+  qrEl.innerHTML = "";
+  try{
+    new QRCode(qrEl, {
+      text: window.location.href,
+      width: 120,
+      height: 120,
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }catch(e){
+    console.warn('QR falhou', e);
+  }
 
   document.getElementById('whatsappBtn').onclick = () => {
     const owner = OWNER_WHATSAPP;
@@ -344,14 +372,18 @@ function showResult(label, phone){
     window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  // send JSON to Apps Script
+  // send JSON to Apps Script (if configured)
   try{
-    const payload = { phone: phone, prize: label, date: new Date().toISOString(), admin: (phone===ADMIN_PHONE ? ADMIN_TAG : '') };
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    }).catch((e)=>{ console.warn('Envio Sheets falhou', e); });
+    if(GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes('PASTE_YOUR')){
+      const payload = { phone: phone, prize: label, date: new Date().toISOString(), admin: (normalizePhone(phone)===normalizePhone(ADMIN_PHONE) ? ADMIN_TAG : '') };
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).catch((e)=>{ console.warn('Envio Sheets falhou', e); });
+    } else {
+      console.warn('Apps Script URL não configurado - resultado não enviado ao Sheets.');
+    }
   }catch(e){ console.warn('Erro envio sheets', e); }
 }
 
