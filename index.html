@@ -7,12 +7,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
-  --gold1:#FFF5C3;
-  --gold2:#FFD95A;
-  --gold3:#C6A700;
-  --gold4:#7a6200;
-  --black1:#000000;
-  --black2:#222222;
+  --gold-1:#FFF9E6;
+  --gold-2:#FFD95A;
+  --gold-3:#D4AF37;
+  --gold-4:#7a5e00;
+  --black-1:#222;
+  --black-2:#000;
 }
 body{
   font-family:Arial,Helvetica,sans-serif;
@@ -20,18 +20,18 @@ body{
   margin:0;padding:0;
   display:flex;flex-direction:column;align-items:center;color:#fff;
 }
-h2{margin:18px 0;text-shadow:0 0 10px rgba(255,215,0,0.25)}
+h2{margin:18px 0;text-shadow:0 0 12px rgba(255,215,0,0.16)}
 .wheel-container{position:relative;display:inline-block}
-canvas{border-radius:50%;box-shadow:0 18px 40px rgba(0,0,0,0.45);background:#111;display:block}
-.arrow{position:absolute;top:-26px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-bottom:28px solid #c0392b}
-#spinBtn{margin:18px;padding:12px 26px;font-size:18px;border:none;border-radius:10px;background:linear-gradient(45deg,var(--gold2),var(--gold3));color:#000;font-weight:700;cursor:pointer;box-shadow:0 0 18px rgba(255,215,0,0.25)}
+canvas{border-radius:50%;box-shadow:0 22px 50px rgba(0,0,0,0.6);background:#111;display:block}
+.arrow{position:absolute;top:-28px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-bottom:30px solid #c0392b}
+#spinBtn{margin:18px;padding:12px 26px;font-size:18px;border:none;border-radius:10px;background:linear-gradient(45deg,var(--gold-2),var(--gold-3));color:#000;font-weight:700;cursor:pointer;box-shadow:0 0 24px rgba(255,215,0,0.28), inset 0 -2px 6px rgba(0,0,0,0.2)}
 #spinBtn:disabled{background:#666;color:#ddd;cursor:not-allowed}
 .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);align-items:center;justify-content:center}
 .modal-content{background:#fff;padding:18px;border-radius:10px;text-align:center;width:88%;max-width:360px;color:#000}
 input{padding:10px;width:92%;margin-bottom:10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
 button{padding:10px 18px;border:none;border-radius:8px;background:#007bff;color:#fff;font-size:16px;cursor:pointer}
 .close-btn{margin-top:12px;background:#111;color:#fff}
-.info-section{max-width:680px;text-align:left;margin:18px;padding:14px;background:#fff;border-radius:10px;box-shadow:0 8px 18px rgba(0,0,0,0.08);color:#000}
+.info-section{max-width:720px;text-align:left;margin:18px;padding:14px;background:#fff;border-radius:10px;box-shadow:0 8px 18px rgba(0,0,0,0.08);color:#000}
 .info-section h3{margin-bottom:8px}
 .info-section p{margin:6px 0}
 @media (max-width:420px){ canvas{width:320px;height:320px} }
@@ -41,7 +41,7 @@ button{padding:10px 18px;border:none;border-radius:8px;background:#007bff;color:
 <h2>Roleta Premiada</h2>
 
 <div class="wheel-container">
-  <canvas id="wheel" width="360" height="360" aria-label="Roleta"></canvas>
+  <canvas id="wheel" width="360" height="360" aria-label="Roleta premiada"></canvas>
   <div class="arrow" aria-hidden="true"></div>
 </div>
 
@@ -81,20 +81,21 @@ button{padding:10px 18px;border:none;border-radius:8px;background:#007bff;color:
 </section>
 
 <script>
-/* ---------- CONFIG ---------- */
-const ADMIN_PHONE = "77998652620";       // número liberado para testes
+/* ---------------- CONFIG ---------------- */
+const ADMIN_PHONE = "77998652620";         // liberado para testes
 const ADMIN_TAG = "ADM";
-const WHATSAPP_TARGET = "77981633924";   // sem o +55 no envio via wa.me aqui (server uses)
+const WHATSAPP_TARGET = "77981633924";     // sem country code; ownerFull abaixo
+const OWNER_FULL = "55" + WHATSAPP_TARGET; // wa.me needs country code prefix
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIjpHdsFx0TyHRs8YDe7fZlJ0l88SPQRklLu2QTMquIeHvvMuIr01ZRY-8GQi7yzXx/exec";
 
-/* ---------- PRIZES (fixed order) ---------- */
+/* ---------------- PRIZES & SEQUENCE (fixed order) ---------------- */
 const prizes = [
-  {label:'DESIGN SIMPLES 50%'},
-  {label:'FIO A FIO 50%'},
-  {label:'SHADOW LINE 50%'},
-  {label:'DESIGN SIMPLES 100%'},
-  {label:'FIO A FIO 100%'},
-  {label:'SHADOW LINE 100%'}
+  { label: 'DESIGN SIMPLES 50%' },
+  { label: 'FIO A FIO 50%' },
+  { label: 'SHADOW LINE 50%' },
+  { label: 'DESIGN SIMPLES 100%' },
+  { label: 'FIO A FIO 100%' },
+  { label: 'SHADOW LINE 100%' }
 ];
 
 const prizesSequence = [
@@ -118,29 +119,32 @@ const prizesSequence = [
 'FIO A FIO 100%'
 ];
 
-/* ---------- CANVAS & DRAW (perfect alternation + 3D gold) ---------- */
+/* ---------------- CANVAS & DRAW (3D gold + perfect alternation + centered text) ---------------- */
 const canvas = document.getElementById('wheel');
 const ctx = canvas.getContext('2d');
 const cx = canvas.width/2, cy = canvas.height/2, r = Math.min(cx, cy) - 12;
 
-function goldGradient(startAngle, endAngle){
-  const g = ctx.createRadialGradient(0, 0, r*0.15, 0, 0, r);
+function goldGradientArc(s, e){
+  // radial gradient centered slightly towards inner radius to mimic metallic reflection
+  const g = ctx.createRadialGradient(0, -r*0.2, r*0.02, 0, -r*0.2, r);
   g.addColorStop(0, '#FFF9E6');
-  g.addColorStop(0.25, '#FFD95A');
-  g.addColorStop(0.6, '#C6A700');
-  g.addColorStop(1, '#6f5600');
+  g.addColorStop(0.25, '#FFEFB3');
+  g.addColorStop(0.45, '#FFD95A');
+  g.addColorStop(0.7, '#D4AF37');
+  g.addColorStop(1, '#7a5e00');
   return g;
 }
-function blackGradient(startAngle, endAngle){
-  const g = ctx.createLinearGradient(Math.cos(startAngle)*r*0.2, Math.sin(startAngle)*r*0.2, Math.cos(endAngle)*r*0.9, Math.sin(endAngle)*r*0.9);
-  g.addColorStop(0, '#666666');
+function blackGradientArc(s, e){
+  const g = ctx.createLinearGradient(Math.cos(s)*r*0.2, Math.sin(s)*r*0.2, Math.cos(e)*r*0.9, Math.sin(e)*r*0.9);
+  g.addColorStop(0, '#4a4a4a');
   g.addColorStop(0.5, '#222222');
   g.addColorStop(1, '#000000');
   return g;
 }
 
 function drawWheel(rotation = 0){
-  const c = prizes.length, a = 2*Math.PI / c;
+  const c = prizes.length;
+  const a = 2 * Math.PI / c;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save();
   ctx.translate(cx, cy);
@@ -149,10 +153,10 @@ function drawWheel(rotation = 0){
   // outer rim shine
   ctx.beginPath();
   ctx.arc(0,0,r+8,0,2*Math.PI);
-  const rimG = ctx.createRadialGradient(0,0,r*0.6,0,0,r+8);
-  rimG.addColorStop(0,'rgba(255,255,255,0.12)');
-  rimG.addColorStop(1,'rgba(0,0,0,0.35)');
-  ctx.fillStyle = rimG;
+  const rim = ctx.createRadialGradient(0,0,r*0.5,0,0,r+8);
+  rim.addColorStop(0,'rgba(255,255,255,0.12)');
+  rim.addColorStop(1,'rgba(0,0,0,0.35)');
+  ctx.fillStyle = rim;
   ctx.fill();
 
   for(let i=0;i<c;i++){
@@ -161,18 +165,17 @@ function drawWheel(rotation = 0){
     ctx.moveTo(0,0);
     ctx.arc(0,0,r,s,e);
 
-    // enforce strict alternation: 0=black,1=gold,2=black,...
-    const isGold = (i % 2 === 1);
-    if(isGold) ctx.fillStyle = goldGradient(s,e);
-    else ctx.fillStyle = blackGradient(s,e);
+    const isGold = (i % 2 === 1); // 0=black,1=gold,2=black...
+
+    ctx.fillStyle = isGold ? goldGradientArc(s,e) : blackGradientArc(s,e);
     ctx.fill();
 
-    // divider line
-    ctx.strokeStyle = '#111';
+    // thin metallic divider
+    ctx.strokeStyle = '#0d0d0d';
     ctx.lineWidth = 1.6;
     ctx.stroke();
 
-    // text
+    // text: rotate to middle of sector then translate outwards, rotate for readability
     ctx.save();
     const mid = s + a/2;
     ctx.rotate(mid);
@@ -181,7 +184,7 @@ function drawWheel(rotation = 0){
     ctx.font = "bold 12px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = isGold ? '#000000' : '#FFD700';
+    ctx.fillStyle = isGold ? '#000000' : '#FFD700'; // contrast: black text on gold, gold text on black
     drawWrappedText(ctx, prizes[i].label, 0, 0, 110);
     ctx.restore();
   }
@@ -192,28 +195,38 @@ function drawWheel(rotation = 0){
   const hub = ctx.createRadialGradient(0,0,2,0,0,r*0.12);
   hub.addColorStop(0,'#fff'); hub.addColorStop(0.6,'rgba(255,255,255,0.2)'); hub.addColorStop(1,'rgba(255,255,255,0)');
   ctx.fillStyle = hub; ctx.fill();
-  ctx.beginPath(); ctx.arc(0,0,9,0,2*Math.PI); ctx.fillStyle='#b80000'; ctx.fill();
+
+  // red center button
+  ctx.beginPath();
+  ctx.arc(0,0,9,0,2*Math.PI);
+  ctx.fillStyle = '#b80000';
+  ctx.fill();
 
   ctx.restore();
 }
 
-function drawWrappedText(ctx, text, x, y, maxWidth){
-  if(ctx.measureText(text).width <= maxWidth){ ctx.fillText(text,x,y); return; }
-  const parts = text.split(' '); let line='', lines=[];
+function drawWrappedText(context, text, x, y, maxWidth){
+  // break into up to 2 lines for most labels; keeps centered
+  if(context.measureText(text).width <= maxWidth){ context.fillText(text, x, y); return; }
+  const parts = text.split(' ');
+  let line = '', lines = [];
   for(let n=0;n<parts.length;n++){
-    const testLine = line + (line ? ' ' : '') + parts[n];
-    if(ctx.measureText(testLine).width > maxWidth && line){
-      lines.push(line); line = parts[n];
-    } else line = testLine;
+    const testLine = line ? (line + ' ' + parts[n]) : parts[n];
+    if(context.measureText(testLine).width > maxWidth && line){
+      lines.push(line);
+      line = parts[n];
+    } else {
+      line = testLine;
+    }
   }
   if(line) lines.push(line);
   const offset = (lines.length - 1) * -8;
-  for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], x, y + offset + i*16);
+  for(let i=0;i<lines.length;i++) context.fillText(lines[i], x, y + offset + i*16);
 }
 
 drawWheel();
 
-/* ---------- LOGIC: spinning, index, blocks ---------- */
+/* ---------------- LOGIC: spinning, state & restrictions ---------------- */
 let spinning = false;
 let currentIndex = parseInt(localStorage.getItem('currentIndex') || '0', 10);
 let usedPhones = JSON.parse(localStorage.getItem('usedPhones') || '[]');
@@ -239,7 +252,7 @@ document.getElementById('spinBtn').addEventListener('click', () => {
     return;
   }
 
-  // admin bypass: admin can spin unlimited
+  // admin bypass: admin phone ignores hasSpun & usedPhones
   if(hasSpun && phone !== ADMIN_PHONE){
     alert('Você já participou desta promoção neste dispositivo.');
     return;
@@ -249,26 +262,26 @@ document.getElementById('spinBtn').addEventListener('click', () => {
     return;
   }
 
-  // start spin based on fixed sequence
+  // Start spin using fixed sequence
   spinning = true;
   const targetLabel = prizesSequence[currentIndex];
   const prizeIndex = prizes.findIndex(p => p.label === targetLabel);
-  // keep the same rotation math so wheel lands on prizeIndex
   const spins = 4 + Math.floor(Math.random()*3);
   const degreesPerSector = 360 / prizes.length;
-  const offset = Math.random()*(degreesPerSector-6) - (degreesPerSector/2 - 3);
+  const offset = Math.random()*(degreesPerSector - 6) - (degreesPerSector/2 - 3);
   const totalDeg = spins*360 + 360 - (prizeIndex*degreesPerSector + degreesPerSector/2) + offset;
   const start = performance.now();
   const duration = 4200 + Math.random()*1200;
 
   function animate(now){
-    const t = Math.min(1, (now - start)/duration);
+    const t = Math.min(1, (now - start) / duration);
     const ease = 1 - Math.pow(1 - t, 3);
     const curDeg = totalDeg * ease;
     drawWheel(curDeg * Math.PI/180);
     if(t < 1) requestAnimationFrame(animate);
     else {
       spinning = false;
+      // advance index and persist
       currentIndex++;
       localStorage.setItem('currentIndex', currentIndex);
       const phoneVal = localStorage.getItem('wheelPhone') || '';
@@ -291,7 +304,7 @@ document.getElementById('spinBtn').addEventListener('click', () => {
   requestAnimationFrame(animate);
 });
 
-/* ---------- RESULT (modal + WhatsApp) ---------- */
+/* ---------------- RESULT (modal + WhatsApp) ---------------- */
 function showResult(label, phone){
   const modal = document.getElementById('resultModal');
   document.getElementById('resultTitle').textContent = label;
@@ -299,35 +312,29 @@ function showResult(label, phone){
   document.getElementById('qrcode').innerHTML = '';
   new QRCode(document.getElementById("qrcode"), { text: window.location.href, width:120, height:120 });
 
-  // open WhatsApp after slight delay
-  const owner = WHATSAPP_TARGET;
   const userPhone = phone || localStorage.getItem('wheelPhone') || 'Não informado';
   const msg = `Olá! Acabei de ganhar ${label} na roleta premiada!\nTelefone: ${userPhone}`;
-  setTimeout(()=>{ window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, '_blank'); }, 800);
+  setTimeout(()=>{ window.open(`https://wa.me/${OWNER_FULL}?text=${encodeURIComponent(msg)}`, '_blank'); }, 700);
 }
 
-/* ---------- SEND TO SHEETS (beacon or fetch no-cors) ---------- */
+/* ---------------- SEND TO SHEETS (form-encoded POST to avoid CORS issues) ---------------- */
 function sendToSheets(phone, prize, adminFlag){
   try{
-    const payload = {
-      phone: phone ? (phone + (adminFlag === ADMIN_TAG ? ' ('+ADMIN_TAG+')' : '')) : '',
-      prize: prize,
-      date: new Date().toISOString(),
-      admin_test: adminFlag
-    };
-    const body = JSON.stringify(payload);
-    if(navigator.sendBeacon){
-      navigator.sendBeacon(GOOGLE_SCRIPT_URL, body);
-    } else {
-      // mode no-cors used because Apps Script may not return CORS headers for POST
-      fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'application/json'}, body }).catch(()=>{});
-    }
+    const phoneField = phone ? (phone + (adminFlag === ADMIN_TAG ? ' ('+ADMIN_TAG+')' : '')) : '';
+    const params = `phone=${encodeURIComponent(phoneField)}&prize=${encodeURIComponent(prize)}&date=${encodeURIComponent(new Date().toISOString())}&admin=${encodeURIComponent(adminFlag)}`;
+    // post as application/x-www-form-urlencoded (Apps Script doPost(e) can read e.parameter)
+    fetch(GOOGLE_SCRIPT_URL + "?action=add", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: params,
+      // no-cors not used; Apps Script should accept this when deployed as Web App with "Anyone, even anonymous"
+    }).then(()=>{/* silent success */}).catch((err)=>{ console.warn('Erro ao enviar para Sheets', err); });
   }catch(e){
-    console.warn('Erro ao enviar para Sheets', e);
+    console.warn('Erro ao preparar envio para Sheets', e);
   }
 }
 
-/* ---------- MODALS & PHONE SAVE ---------- */
+/* ---------------- MODALS & PHONE SAVE (Option A: allow immediate spin) ---------------- */
 document.getElementById('closeRes').addEventListener('click', ()=> document.getElementById('resultModal').style.display='none');
 
 document.getElementById('savePhoneBtn').addEventListener('click', ()=>{
@@ -336,10 +343,10 @@ document.getElementById('savePhoneBtn').addEventListener('click', ()=>{
   localStorage.setItem('wheelPhone', raw);
   document.getElementById('phoneModal').style.display='none';
   alert('Telefone salvo! Agora você pode girar a roleta.');
-  // Option A: allow immediate spin (no further click required beyond pressing "Girar")
+  // immediate allow to spin (Option A)
 });
 
-/* ---------- ADMIN TOUCH-LONG (open dashboard) ---------- */
+/* ---------------- ADMIN TOUCH-LONG (open dashboard.html) ---------------- */
 let pressTimer;
 const titleEl = document.querySelector('h2');
 titleEl.addEventListener('touchstart', ()=> { pressTimer = setTimeout(()=>{ openAdmin(); }, 5000); });
@@ -348,7 +355,7 @@ titleEl.addEventListener('mousedown', ()=> { pressTimer = setTimeout(()=>{ openA
 titleEl.addEventListener('mouseup', ()=> clearTimeout(pressTimer));
 function openAdmin(){ const pwd = prompt('Digite a senha de administrador:'); if(pwd === 'adm0832'){ window.open('dashboard.html','_blank'); } else alert('Senha incorreta.'); }
 
-/* ---------- init ---------- */
+/* ---------- INIT ---------- */
 (function(){ drawWheel(); })();
 </script>
 </body>
