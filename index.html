@@ -17,17 +17,22 @@
   }
   h2 { margin-top: 20px; color: #000; }
   .wheel-container { position: relative; display: inline-block; margin-top: 20px; }
-  canvas { background: radial-gradient(circle, #fff 0%, #e8e8e8 100%); border-radius: 50%; box-shadow: 0 0 15px rgba(0,0,0,0.3); }
+  canvas {
+    background: radial-gradient(circle, #fff 0%, #f1f1f1 100%);
+    border-radius: 50%;
+    box-shadow: inset 0 0 25px rgba(0,0,0,0.3), 0 0 20px rgba(0,0,0,0.3);
+  }
+  /* seta corrigida – no topo apontando para baixo */
   .arrow {
     position: absolute;
-    top: 50%;
-    left: calc(100% + 10px);
-    transform: translateY(-50%) rotate(90deg);
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%) rotate(180deg);
     width: 0;
     height: 0;
     border-left: 15px solid transparent;
     border-right: 15px solid transparent;
-    border-bottom: 25px solid red;
+    border-top: 25px solid red;
   }
   #spinBtn {
     margin: 20px;
@@ -88,7 +93,6 @@
 
 <button id="spinBtn">Girar</button>
 
-<!-- Modal telefone -->
 <div id="phoneModal" class="modal">
   <div class="modal-content">
     <h3>Digite seu telefone</h3>
@@ -97,7 +101,6 @@
   </div>
 </div>
 
-<!-- Modal resultado -->
 <div id="resultModal" class="modal">
   <div class="modal-content">
     <h2 id="resultTitle" style="margin:6px 0;font-size:20px;color:#000"></h2>
@@ -155,13 +158,16 @@ function drawWheel(rotation = 0) {
   for (let i = 0; i < prizes.length; i++) {
     const start = i * arc;
     const end = start + arc;
-    const gradient = ctx.createLinearGradient(-r, -r, r, r);
+
+    const gradient = ctx.createRadialGradient(0, 0, r*0.3, 0, 0, r);
     if (prizes[i].color === '#D4AF37') {
-      gradient.addColorStop(0, '#FFD700');
+      gradient.addColorStop(0, '#FFF8DC');
+      gradient.addColorStop(0.5, '#FFD700');
       gradient.addColorStop(1, '#B8860B');
     } else {
-      gradient.addColorStop(0, '#333');
-      gradient.addColorStop(1, '#000');
+      gradient.addColorStop(0, '#444');
+      gradient.addColorStop(0.5, '#000');
+      gradient.addColorStop(1, '#111');
     }
 
     ctx.beginPath();
@@ -169,6 +175,8 @@ function drawWheel(rotation = 0) {
     ctx.arc(0, 0, r, start, end);
     ctx.fillStyle = gradient;
     ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#fff";
     ctx.stroke();
 
     ctx.save();
@@ -220,7 +228,7 @@ function startSpin(phone) {
   const targetLabel = prizesSequence[targetIndex];
   const prizeIndex = prizes.findIndex(p => p.label === targetLabel);
   const spins = 5;
-  const totalRotation = spins * 2 * Math.PI + (Math.PI / 2) - (prizeIndex * (2 * Math.PI / prizes.length)) - (Math.PI / prizes.length);
+  const totalRotation = spins * 2 * Math.PI - (prizeIndex * (2 * Math.PI / prizes.length)) - (Math.PI / prizes.length);
   const start = performance.now();
   const duration = 4000;
 
