@@ -91,10 +91,9 @@
     text-shadow: 0 0 3px #fff;
     box-shadow: 0 0 15px rgba(255,215,0,0.6);
   }
-  #spinBtn:hover {
-    filter: brightness(1.2);
-  }
+  #spinBtn:hover { filter: brightness(1.2); }
   #spinBtn:disabled { background: #888; cursor: not-allowed; }
+
   .modal {
     display: none;
     position: fixed;
@@ -156,6 +155,7 @@
   <div class="modal-content">
     <h2 id="resultTitle" style="margin:6px 0;font-size:20px;color:#000"></h2>
     <div id="qrcode" style="margin:10px auto;width:120px;height:120px;"></div>
+    <button id="whatsappBtn">📲 Enviar via WhatsApp</button>
     <button class="close-btn" id="closeRes">Fechar</button>
   </div>
 </div>
@@ -253,10 +253,16 @@ drawWheel();
 let spinning = false;
 let currentIndex = 0;
 let usedPhones = JSON.parse(localStorage.getItem("usedPhones") || "[]");
+let currentPrize = "";
 
 document.getElementById('spinBtn').addEventListener('click', () => {
   if (spinning) return;
-  document.getElementById('phoneModal').style.display = 'flex';
+  const phone = localStorage.getItem('wheelPhone');
+  if (!phone) {
+    document.getElementById('phoneModal').style.display = 'flex';
+    return;
+  }
+  startSpin(phone);
 });
 
 document.getElementById('savePhoneBtn').addEventListener('click', () => {
@@ -264,7 +270,6 @@ document.getElementById('savePhoneBtn').addEventListener('click', () => {
   if (!/^\d{10,13}$/.test(v)) { alert('Digite um telefone válido com DDD'); return; }
   localStorage.setItem('wheelPhone', v);
   document.getElementById('phoneModal').style.display = 'none';
-  startSpin(v);
 });
 
 function startSpin(phone) {
@@ -279,7 +284,7 @@ function startSpin(phone) {
   const targetLabel = prizesSequence[targetIndex];
   const prizeIndex = prizes.findIndex(p => p.label === targetLabel);
   const spins = 5;
-  const totalRotation = spins * 2 * Math.PI - (prizeIndex * (2 * Math.PI / prizes.length)) - (Math.PI / prizes.length);
+  const totalRotation = spins * 2 * Math.PI + (Math.PI * 1.5) - (prizeIndex * (2 * Math.PI / prizes.length)) - (Math.PI / prizes.length);
   const start = performance.now();
   const duration = 4000;
 
@@ -291,6 +296,7 @@ function startSpin(phone) {
     else {
       spinning = false;
       currentIndex++;
+      currentPrize = targetLabel;
       if (phone !== "77998652620") {
         usedPhones.push(phone);
         localStorage.setItem("usedPhones", JSON.stringify(usedPhones));
@@ -312,15 +318,17 @@ function showResult(label, phone) {
     height: 120
   });
 
+  document.getElementById('whatsappBtn').onclick = () => {
+    const owner = "5577981633924";
+    const msg = `🎉 Olá! Ganhei na Roleta Premiada!\n🏆 Prêmio: ${label}\n📱 Telefone: ${phone}`;
+    window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
   fetch("https://script.google.com/macros/s/AKfycbxIjpHdsFx0TyHRs8YDe7fZlJ0l88SPQRklLu2QTMquIeHvvMuIr01ZRY-8GQi7yzXx/exec", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `phone=${encodeURIComponent(phone)}&prize=${encodeURIComponent(label)}&date=${encodeURIComponent(new Date().toLocaleString())}`
   }).catch(err => console.error("Erro ao enviar:", err));
-
-  const owner = "5577998633924";
-  const msg = `🎉 Olá! Ganhei na Roleta Premiada!\n🏆 Prêmio: ${label}\n📱 Telefone: ${phone}`;
-  setTimeout(() => { window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank"); }, 500);
 }
 
 document.getElementById('closeRes').addEventListener('click', () => {
