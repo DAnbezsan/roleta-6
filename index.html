@@ -7,50 +7,56 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
-    --gold1:#FFF9E6; --gold2:#FFD95A; --gold3:#D4AF37; --gold4:#7a5e00;
-    --black1:#222; --black2:#000;
-  }
-  body{
-    font-family: Arial, Helvetica, sans-serif;
-    background: radial-gradient(circle at center, #0b0b0b 0%, #030303 100%);
-    margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; color:#fff;
-  }
-  h2{ margin:6px 0 18px; color:var(--gold2); text-shadow:0 0 12px rgba(255,215,0,0.2); }
-  .wheel-wrap{ position: relative; width:380px; height:420px; display:flex; align-items:center; justify-content:center; }
-  canvas{ border-radius:50%; display:block; width:320px; height:320px;
-    background: radial-gradient(circle, #fff 0%, #f1f1f1 100%);
-    box-shadow: 0 0 40px rgba(255,215,0,0.22), inset 0 0 25px rgba(0,0,0,0.35);
+    --gold-light:#FFF8E6;
+    --gold-mid:#FFD95A;
+    --gold-dark:#D4AF37;
+    --gold-deep:#7a5e00;
+    --black-1:#1f1f1f;
+    --black-2:#0b0b0b;
   }
 
-  /* casino lights ring */
-  .casino-lights{ position:absolute; width:420px; height:420px; border-radius:50%; pointer-events:none; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1; }
+  body{
+    font-family: Arial, Helvetica, sans-serif;
+    background: radial-gradient(circle at center, #070707 0%, #000 100%);
+    margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; color:#fff;
+  }
+  h2{
+    margin:6px 0 18px;
+    color:var(--gold-mid);
+    text-shadow:0 0 12px rgba(255,215,0,0.25);
+  }
+
+  .wheel-wrap{ position: relative; width:420px; height:460px; display:flex; align-items:center; justify-content:center; }
+  canvas{ border-radius:50%; width:360px; height:360px; background: transparent; box-shadow: 0 0 40px rgba(255,215,0,0.16), inset 0 0 25px rgba(0,0,0,0.5); }
+
+  /* casino lights */
+  .casino-lights{ position:absolute; width:440px; height:440px; border-radius:50%; pointer-events:none; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1; }
   .casino-lights::before, .casino-lights::after{
     content:""; position:absolute; inset:0; border-radius:50%;
-    background: conic-gradient(from 0deg, rgba(255,215,0,0.95) 0 12deg, rgba(255,0,0,0.95) 12deg 24deg, rgba(255,215,0,0.2) 24deg 36deg, transparent 36deg 60deg);
+    background: conic-gradient(from 0deg, rgba(255,215,0,0.95) 0 12deg, rgba(255,0,0,0.95) 12deg 24deg, rgba(255,215,0,0.25) 24deg 36deg, transparent 36deg 60deg);
     mask: radial-gradient(closest-side, transparent 0 72%, black 73%);
     animation: spin 5s linear infinite;
     filter: blur(1px);
   }
-  .casino-lights::after{ animation-duration:8s; opacity:0.7; transform-origin:center; filter: blur(3px) saturate(1.2); }
+  .casino-lights::after{ animation-duration:8s; opacity:0.7; filter: blur(3px) saturate(1.2); }
   @keyframes spin{ from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
 
-  /* golden arrow (placed below wheel, pointing up) */
-  .arrow {
+  /* arrow: BELOW the wheel, pointing UP to the center */
+  .arrow{
     position:absolute;
-    bottom:-30px; /* below canvas */
-    left:50%;
+    bottom:-30px; left:50%;
     transform:translateX(-50%);
     width:0; height:0;
     border-left:18px solid transparent;
     border-right:18px solid transparent;
-    border-top:30px solid var(--gold3); /* triangle pointing up */
-    filter: drop-shadow(0 6px 6px rgba(0,0,0,0.45));
+    border-top:30px solid var(--gold-dark); /* triangle pointing up */
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,0.5));
     z-index:5;
   }
 
   #spinBtn{
     margin-top:18px;padding:12px 26px;border-radius:10px;border:none;font-weight:700;
-    background:linear-gradient(90deg,var(--gold2),var(--gold3)); color:#000; cursor:pointer; box-shadow:0 8px 20px rgba(255,215,0,0.22);
+    background:linear-gradient(90deg,var(--gold-mid),var(--gold-dark)); color:#000; cursor:pointer; box-shadow:0 8px 20px rgba(255,215,0,0.22);
   }
   #spinBtn:disabled{background:#666;color:#ddd;cursor:not-allowed}
 
@@ -67,60 +73,60 @@
 </style>
 </head>
 <body>
-<h2>🎰 Roleta Premiada</h2>
+  <h2>🎰 Roleta Premiada</h2>
 
-<div class="wheel-wrap" aria-hidden="false">
-  <canvas id="wheel" width="320" height="320" aria-label="Roleta"></canvas>
-  <div class="arrow" aria-hidden="true"></div>
-  <div class="casino-lights" aria-hidden="true"></div>
-</div>
-
-<button id="spinBtn">Girar</button>
-
-<!-- phone modal -->
-<div id="phoneModal" class="modal" aria-hidden="true">
-  <div class="modal-content">
-    <h3>Informe seu telefone</h3>
-    <input id="phoneInput" placeholder="DDD + número (somente dígitos)" maxlength="13" />
-    <div>
-      <button id="savePhoneBtn" class="btn">Salvar</button>
-      <button id="cancelPhoneBtn" class="btn close-btn">Cancelar</button>
-    </div>
-    <p style="font-size:13px;color:#444;margin-top:8px;">Após salvar, clique em <strong>Girar</strong> novamente para iniciar o sorteio.</p>
+  <div class="wheel-wrap" aria-hidden="false">
+    <canvas id="wheel" width="360" height="360" aria-label="Roleta"></canvas>
+    <div class="arrow" aria-hidden="true" title="Alvo do prêmio"></div>
+    <div class="casino-lights" aria-hidden="true"></div>
   </div>
-</div>
 
-<!-- result modal -->
-<div id="resultModal" class="modal" aria-hidden="true">
-  <div class="modal-content">
-    <h2 id="resultTitle" style="margin:6px 0;font-size:20px;"></h2>
-    <div id="qrcode"></div>
-    <div>
-      <button id="whatsappBtn">📲 Enviar via WhatsApp</button>
-    </div>
-    <div>
-      <button id="closeRes" class="btn close-btn">Fechar</button>
+  <button id="spinBtn">Girar</button>
+
+  <!-- phone modal -->
+  <div id="phoneModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h3>Informe seu telefone</h3>
+      <input id="phoneInput" placeholder="DDD + número (somente dígitos)" maxlength="13" />
+      <div>
+        <button id="savePhoneBtn" class="btn">Salvar</button>
+        <button id="cancelPhoneBtn" class="btn close-btn">Cancelar</button>
+      </div>
+      <p style="font-size:13px;color:#444;margin-top:8px;">Após salvar, clique em <strong>Girar</strong> novamente para iniciar o sorteio.</p>
     </div>
   </div>
-</div>
 
-<div class="info">
-  <strong>Como participar:</strong>
-  <ol>
-    <li>Clique em <em>Girar</em> — o sistema pedirá seu telefone (mesmo que já tenha salvo).</li>
-    <li>Salve o telefone e em seguida clique em <em>Girar</em> novamente para iniciar o sorteio.</li>
-  </ol>
-  <p>Regras: cada telefone só pode girar uma vez (exceto ADM). Promoção válida até 10 de janeiro.</p>
-</div>
+  <!-- result modal -->
+  <div id="resultModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h2 id="resultTitle" style="margin:6px 0;font-size:20px;"></h2>
+      <div id="qrcode"></div>
+      <div>
+        <button id="whatsappBtn">📲 Enviar via WhatsApp</button>
+      </div>
+      <div>
+        <button id="closeRes" class="btn close-btn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <strong>Como participar:</strong>
+    <ol>
+      <li>Clique em <em>Girar</em> — o sistema pedirá seu telefone (mesmo que já tenha salvo).</li>
+      <li>Salve o telefone e em seguida clique em <em>Girar</em> novamente para iniciar o sorteio.</li>
+    </ol>
+    <p>Regras: cada telefone só pode girar uma vez (exceto ADM). Promoção válida até 10 de janeiro.</p>
+  </div>
 
 <script>
-/* ---------- CONFIG ---------- */
+/* ---------------- CONFIG ---------------- */
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIjpHdsFx0TyHRs8YDe7fZlJ0l88SPQRklLu2QTMquIeHvvMuIr01ZRY-8GQi7yzXx/exec";
-const OWNER_WHATSAPP = "SEU_NUMERO_AQUI";             // substituir por exemplo: 5577981633924
-const ADMIN_PHONE = "SEU_NUMERO_ADMIN_AQUI";          // substituir por exemplo: 77998652620
+const OWNER_WHATSAPP = "SEU_NUMERO_AQUI";      // substitua pelo número internacional sem '+', ex: 5577981633924
+const ADMIN_PHONE = "SEU_NUMERO_ADMIN_AQUI";   // substitua ex: 77998652620
 const ADMIN_TAG = "ADM";
 
-/* ---------- PRIZES ---------- */
+/* ---------------- PRIZES ---------------- */
 const prizes = [
   { label: "DESIGN 50%" },
   { label: "FIO A FIO 50%" },
@@ -153,15 +159,15 @@ const prizesSequence = [
   'FIO A FIO 100%'
 ];
 
-/* ---------- CANVAS DRAW (gold metallic + centered text) ---------- */
+/* ---------------- CANVAS DRAW ---------------- */
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const cx = canvas.width / 2, cy = canvas.height / 2;
-const r = Math.min(cx, cy) - 12;
+const r = Math.min(cx, cy) - 18;
 
-function goldGrad(s,e){
-  const g = ctx.createRadialGradient(0, -r*0.2, r*0.02, 0, -r*0.2, r);
-  g.addColorStop(0, "#FFF9E6");
+function goldGrad(){
+  const g = ctx.createRadialGradient( -r*0.2, -r*0.2, r*0.02, 0, 0, r);
+  g.addColorStop(0, "#FFF8E6");
   g.addColorStop(0.25, "#FFEFB3");
   g.addColorStop(0.45, "#FFD95A");
   g.addColorStop(0.7, "#D4AF37");
@@ -170,11 +176,12 @@ function goldGrad(s,e){
 }
 function blackGrad(s,e){
   const g = ctx.createLinearGradient(Math.cos(s)*r*0.2, Math.sin(s)*r*0.2, Math.cos(e)*r*0.9, Math.sin(e)*r*0.9);
-  g.addColorStop(0, "#4a4a4a");
-  g.addColorStop(0.5, "#222222");
-  g.addColorStop(1, "#000000");
+  g.addColorStop(0, "#3b3b3b");
+  g.addColorStop(0.5, "#222");
+  g.addColorStop(1, "#000");
   return g;
 }
+
 function drawWrappedText(context, text, x, y, maxWidth){
   if(context.measureText(text).width <= maxWidth){ context.fillText(text,x,y); return; }
   const parts = text.split(' '); let line='', lines=[];
@@ -195,10 +202,10 @@ function drawWheel(rotation=0){
   ctx.translate(cx,cy);
   ctx.rotate(rotation);
 
-  // rim shine
+  // rim soft shine
   ctx.beginPath();
-  ctx.arc(0,0,r+8,0,2*Math.PI);
-  const rim = ctx.createRadialGradient(0,0,r*0.5,0,0,r+8);
+  ctx.arc(0,0,r+14,0,2*Math.PI);
+  const rim = ctx.createRadialGradient(0,0,r*0.5,0,0,r+14);
   rim.addColorStop(0,'rgba(255,255,255,0.12)');
   rim.addColorStop(1,'rgba(0,0,0,0.35)');
   ctx.fillStyle = rim; ctx.fill();
@@ -206,22 +213,28 @@ function drawWheel(rotation=0){
   for(let i=0;i<c;i++){
     const s = i*a, e = s+a;
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r,s,e);
-    const isGold = (i % 2 === 1);
-    ctx.fillStyle = isGold ? goldGrad(s,e) : blackGrad(s,e);
+    const isGold = (i % 2 === 0); // alternate starting with gold on index 0
+    ctx.fillStyle = isGold ? goldGrad() : blackGrad(s,e);
     ctx.fill();
-    ctx.strokeStyle = '#0d0d0d'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.strokeStyle = '#0b0b0b'; ctx.lineWidth = 1.6; ctx.stroke();
 
-    // text: center along arc
+    // text: centered; keep readable orientation
     ctx.save();
     const mid = s + a/2;
-    ctx.rotate(mid + Math.PI / prizes.length / 2); // slight compensation
+    ctx.rotate(mid);
     ctx.translate(0, -r*0.62);
-    ctx.rotate(Math.PI/2);
+
+    // Keep text horizontal/upright: flip when on bottom half
+    const angleDeg = (mid * 180 / Math.PI + 360) % 360;
+    const rotateText = (angleDeg > 90 && angleDeg < 270) ? Math.PI/2 : -Math.PI/2;
+    ctx.rotate(rotateText);
+
     ctx.font = "bold 13px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    // text color opposite to background: gold bg -> black text; black bg -> gold text
     ctx.fillStyle = isGold ? '#000' : '#FFD700';
-    drawWrappedText(ctx, prizes[i].label, 0, 0, 110);
+    drawWrappedText(ctx, prizes[i].label, 0, 0, 120);
     ctx.restore();
   }
 
@@ -235,26 +248,39 @@ function drawWheel(rotation=0){
 }
 drawWheel();
 
-/* ---------- LOGIC ---------- */
+/* ---------------- LOGIC ---------------- */
 let spinning = false;
 let currentIndex = parseInt(localStorage.getItem('currentIndex')||'0',10);
 let usedPhones = JSON.parse(localStorage.getItem('usedPhones')||'[]');
-let currentPrize = "";
+let phoneSavedForThisRound = false;
 
-/* arrow target angle (degrees) - arrow points UP from bottom (north) == 270deg */
-const ARROW_DEG = 270;
+const ARROW_DEG = 270; // arrow points UP toward center (target sector mid angle at 270deg)
 function degToRad(d){ return d * Math.PI / 180; }
 
-document.getElementById('spinBtn').addEventListener('click', ()=>{
+/* SPIN BUTTON FLOW:
+   - click Girar -> open modal (prefill)
+   - save phone -> set phoneSavedForThisRound = true (user must click Girar again to actually spin)
+   - next click Girar (with phoneSavedForThisRound true) -> start spin
+*/
+const spinBtn = document.getElementById('spinBtn');
+spinBtn.addEventListener('click', ()=>{
   if(spinning) return;
-  // always request phone first (prefill if already saved)
+  // if phone saved and modal not open -> start
+  if(phoneSavedForThisRound && document.getElementById('phoneModal').style.display !== 'flex'){
+    const phone = localStorage.getItem('wheelPhone') || '';
+    if(!phone){ alert('Informe o telefone antes de girar.'); phoneSavedForThisRound = false; return; }
+    startSpinWithPhone(phone);
+    return;
+  }
+  // otherwise open phone modal
   const stored = localStorage.getItem('wheelPhone') || '';
   document.getElementById('phoneInput').value = stored;
   document.getElementById('phoneModal').style.display = 'flex';
 });
 
-/* Phone modal behavior */
+/* phone modal buttons */
 document.getElementById('cancelPhoneBtn').addEventListener('click', ()=>{
+  phoneSavedForThisRound = false;
   document.getElementById('phoneModal').style.display = 'none';
 });
 document.getElementById('savePhoneBtn').addEventListener('click', ()=>{
@@ -262,43 +288,37 @@ document.getElementById('savePhoneBtn').addEventListener('click', ()=>{
   if(!/^\d{10,13}$/.test(raw)){ alert('Digite um telefone válido (somente dígitos, 10–13 caracteres)'); return; }
   localStorage.setItem('wheelPhone', raw);
   document.getElementById('phoneModal').style.display = 'none';
-  // user must click "Girar" again to actually spin
+  phoneSavedForThisRound = true;
+  alert('Telefone salvo. Clique em "Girar" novamente para iniciar o sorteio.');
 });
 
-/* When user clicks spin and modal is not open -> start spin */
-document.getElementById('spinBtn').addEventListener('click', ()=>{
-  if(spinning) return;
-  if(document.getElementById('phoneModal').style.display === 'flex') return;
-  const phone = localStorage.getItem('wheelPhone') || '';
-  if(!phone){ alert('Informe seu telefone antes de girar.'); return; }
-  startSpinWithPhone(phone);
-});
-
+/* start spin */
 function startSpinWithPhone(phone){
   if(spinning) return;
-  if(phone !== ADMIN_PHONE && usedPhones.includes(phone)){ alert('Este número já participou da promoção.'); return; }
-
+  if(phone !== ADMIN_PHONE && usedPhones.includes(phone)){ alert('Este número já participou da promoção.'); phoneSavedForThisRound = false; return; }
   spinning = true;
+  phoneSavedForThisRound = false;
+
   const targetIndex = currentIndex % prizesSequence.length;
   const targetLabel = prizesSequence[targetIndex];
-  const prizeIndex = prizes.findIndex(p=>p.label===targetLabel);
-  const spins = 4 + Math.floor(Math.random()*3);
+  const prizeIndex = prizes.findIndex(p => p.label === targetLabel);
+  const spins = 4 + Math.floor(Math.random() * 3);
   const degreesPerSector = 360 / prizes.length;
   const sectorMid = prizeIndex * degreesPerSector + degreesPerSector/2;
-  const offset = (Math.random()*6) - 3; // small random jitter
-  const finalDegrees = spins*360 + (ARROW_DEG - sectorMid) + offset;
+  const jitter = (Math.random()*6) - 3;
+  const finalDegrees = spins*360 + (ARROW_DEG - sectorMid) + jitter;
   const start = performance.now();
   const duration = 4200 + Math.random()*800;
 
   function animate(now){
-    const t = Math.min(1,(now-start)/duration);
-    const ease = 1 - Math.pow(1-t,3);
+    const t = Math.min(1, (now - start) / duration);
+    const ease = 1 - Math.pow(1 - t, 3);
     const curDeg = finalDegrees * ease;
     drawWheel(degToRad(curDeg));
-    if(t < 1) requestAnimationFrame(animate); else {
+    if(t < 1) requestAnimationFrame(animate);
+    else {
       spinning = false;
       currentIndex++;
-      currentPrize = targetLabel;
       if(phone !== ADMIN_PHONE){
         usedPhones.push(phone);
         localStorage.setItem('usedPhones', JSON.stringify(usedPhones));
@@ -310,7 +330,7 @@ function startSpinWithPhone(phone){
   requestAnimationFrame(animate);
 }
 
-/* ---------- RESULT & WHATSAPP & SHEETS ---------- */
+/* show result, QR, WhatsApp and send to Sheets as JSON */
 function showResult(label, phone){
   const modal = document.getElementById('resultModal');
   document.getElementById('resultTitle').textContent = label;
@@ -318,27 +338,26 @@ function showResult(label, phone){
   document.getElementById('qrcode').innerHTML = '';
   new QRCode(document.getElementById("qrcode"), { text: window.location.href, width:120, height:120 });
 
-  // WhatsApp button
   document.getElementById('whatsappBtn').onclick = () => {
     const owner = OWNER_WHATSAPP;
     const msg = `🎉 Olá! Ganhei na Roleta Premiada!\n🏆 Prêmio: ${label}\n📱 Telefone: ${phone}`;
     window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  // Send JSON to Apps Script (using fetch with JSON body)
+  // send JSON to Apps Script
   try{
     const payload = { phone: phone, prize: label, date: new Date().toISOString(), admin: (phone===ADMIN_PHONE ? ADMIN_TAG : '') };
     fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
-    }).catch(()=>{/* silent */});
+    }).catch((e)=>{ console.warn('Envio Sheets falhou', e); });
   }catch(e){ console.warn('Erro envio sheets', e); }
 }
 
-document.getElementById('closeRes').addEventListener('click', ()=>{ document.getElementById('resultModal').style.display='none'; });
+document.getElementById('closeRes').addEventListener('click', ()=>{ document.getElementById('resultModal').style.display = 'none'; });
 
-/* ---------- init ---------- */
+/* init */
 (function(){ drawWheel(); })();
 </script>
 </body>
