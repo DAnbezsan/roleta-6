@@ -136,16 +136,28 @@ document.getElementById('spinBtn').addEventListener('click',()=>{
 
 function showResult(label){
   const modal = document.getElementById('resultModal');
-  document.getElementById('resultTitle').textContent=label;
-  modal.style.display='flex';
-  document.getElementById('qrcode').innerHTML='';
+  document.getElementById('resultTitle').textContent = label;
+  modal.style.display = 'flex';
+  document.getElementById('qrcode').innerHTML = '';
+
   new QRCode(document.getElementById("qrcode"), {
     text: window.location.href,
     width: 120,
     height: 120
   });
+
+  // Enviar mensagem automática via WhatsApp
+  const phoneNumber = "77981633924"; // número fixo do seu WhatsApp
+  const message = encodeURIComponent(`Olá! Acabei de ganhar ${label} na roleta premiada!`);
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+
+  // Abrir em nova aba após pequeno atraso (para usuário ver o resultado)
+  setTimeout(() => {
+    window.open(whatsappUrl, '_blank');
+  }, 2500);
 }
 
+  
 document.getElementById('closeRes').addEventListener('click',()=>document.getElementById('resultModal').style.display='none');
 
 document.getElementById('savePhoneBtn').addEventListener('click',()=>{
