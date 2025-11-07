@@ -18,7 +18,6 @@
   h2 { margin-top: 20px; color: #000; }
   .wheel-container { position: relative; display: inline-block; margin-top: 20px; }
   canvas { background: radial-gradient(circle, #fff 0%, #e8e8e8 100%); border-radius: 50%; box-shadow: 0 0 15px rgba(0,0,0,0.3); }
-  /* seta apontando para o centro */
   .arrow {
     position: absolute;
     top: 50%;
@@ -109,34 +108,34 @@
 
 <script>
 const prizes = [
-  {label:'DESIGN SIMPLES 50%', color:'#D4AF37'},
+  {label:'DESIGN 50%', color:'#D4AF37'},
   {label:'FIO A FIO 50%', color:'#000000'},
-  {label:'SHADOW LINE 50%', color:'#D4AF37'},
-  {label:'DESIGN SIMPLES 100%', color:'#000000'},
+  {label:'SHADOW L. 50%', color:'#D4AF37'},
+  {label:'DESIGN 100%', color:'#000000'},
   {label:'FIO A FIO 100%', color:'#D4AF37'},
-  {label:'SHADOW LINE 100%', color:'#000000'}
+  {label:'SHADOW L. 100%', color:'#000000'}
 ];
 
 const prizesSequence = [
-  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'DESIGN 50%','DESIGN 50%','DESIGN 50%','DESIGN 50%','DESIGN 50%',
   'FIO A FIO 50%','FIO A FIO 50%','FIO A FIO 50%',
-  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
-  'SHADOW LINE 50%','SHADOW LINE 50%',
-  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'DESIGN 50%','DESIGN 50%','DESIGN 50%','DESIGN 50%','DESIGN 50%',
+  'SHADOW L. 50%','SHADOW L. 50%',
+  'DESIGN 50%','DESIGN 50%','DESIGN 50%','DESIGN 50%','DESIGN 50%',
   'FIO A FIO 50%','FIO A FIO 50%','FIO A FIO 50%',
-  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
+  'DESIGN 50%','DESIGN 50%','DESIGN 50%',
   'FIO A FIO 50%','FIO A FIO 50%',
-  'SHADOW LINE 100%',
-  'DESIGN SIMPLES 100%','DESIGN SIMPLES 100%',
-  'DESIGN SIMPLES 50%','DESIGN SIMPLES 50%',
-  'SHADOW LINE 50%','SHADOW LINE 50%',
+  'SHADOW L. 100%',
+  'DESIGN 100%','DESIGN 100%',
+  'DESIGN 50%','DESIGN 50%',
+  'SHADOW L. 50%','SHADOW L. 50%',
   'FIO A FIO 100%',
   'FIO A FIO 50%','FIO A FIO 50%',
-  'DESIGN SIMPLES 100%','DESIGN SIMPLES 100%','DESIGN SIMPLES 100%',
-  'SHADOW LINE 50%',
-  'DESIGN SIMPLES 100%','DESIGN SIMPLES 100%',
+  'DESIGN 100%','DESIGN 100%','DESIGN 100%',
+  'SHADOW L. 50%',
+  'DESIGN 100%','DESIGN 100%',
   'FIO A FIO 100%',
-  'SHADOW LINE 100%',
+  'SHADOW L. 100%',
   'FIO A FIO 100%'
 ];
 
@@ -164,6 +163,7 @@ function drawWheel(rotation = 0) {
       gradient.addColorStop(0, '#333');
       gradient.addColorStop(1, '#000');
     }
+
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, r, start, end);
@@ -173,11 +173,12 @@ function drawWheel(rotation = 0) {
 
     ctx.save();
     ctx.rotate(start + arc / 2);
-    ctx.translate(r * 0.65, 0);
+    ctx.translate(r * 0.7, 0);
     ctx.rotate(-rotation - start - arc / 2);
     ctx.fillStyle = prizes[i].color === '#D4AF37' ? '#000' : '#FFD700';
     ctx.font = "bold 13px Arial";
     ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.fillText(prizes[i].label, 0, 0);
     ctx.restore();
   }
@@ -196,11 +197,19 @@ let usedPhones = JSON.parse(localStorage.getItem("usedPhones") || "[]");
 
 document.getElementById('spinBtn').addEventListener('click', () => {
   if (spinning) return;
-  const phone = localStorage.getItem('wheelPhone');
-  if (!phone) {
-    document.getElementById('phoneModal').style.display = 'flex';
-    return;
-  }
+  document.getElementById('phoneModal').style.display = 'flex';
+});
+
+document.getElementById('savePhoneBtn').addEventListener('click', () => {
+  const v = document.getElementById('phoneInput').value.trim();
+  if (!/^\d{10,13}$/.test(v)) { alert('Digite um telefone válido com DDD'); return; }
+  localStorage.setItem('wheelPhone', v);
+  document.getElementById('phoneModal').style.display = 'none';
+  startSpin(v);
+});
+
+function startSpin(phone) {
+  if (spinning) return;
   if (phone !== "77998652620" && usedPhones.includes(phone)) {
     alert('Este número já participou da promoção.');
     return;
@@ -231,7 +240,7 @@ document.getElementById('spinBtn').addEventListener('click', () => {
     }
   }
   requestAnimationFrame(animate);
-});
+}
 
 function showResult(label, phone) {
   const modal = document.getElementById('resultModal');
@@ -244,7 +253,6 @@ function showResult(label, phone) {
     height: 120
   });
 
-  // Envio para planilha
   fetch("https://script.google.com/macros/s/AKfycbxIjpHdsFx0TyHRs8YDe7fZlJ0l88SPQRklLu2QTMquIeHvvMuIr01ZRY-8GQi7yzXx/exec", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -253,21 +261,11 @@ function showResult(label, phone) {
 
   const owner = "5577998633924";
   const msg = `🎉 Olá! Ganhei na Roleta Premiada!\n🏆 Prêmio: ${label}\n📱 Telefone: ${phone}`;
-  setTimeout(() => {
-    window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank");
-  }, 500);
+  setTimeout(() => { window.open(`https://wa.me/${owner}?text=${encodeURIComponent(msg)}`, "_blank"); }, 500);
 }
 
 document.getElementById('closeRes').addEventListener('click', () => {
   document.getElementById('resultModal').style.display = 'none';
-});
-
-document.getElementById('savePhoneBtn').addEventListener('click', () => {
-  const v = document.getElementById('phoneInput').value.trim();
-  if (!/^\d{10,13}$/.test(v)) { alert('Digite um telefone válido com DDD'); return; }
-  localStorage.setItem('wheelPhone', v);
-  document.getElementById('phoneModal').style.display = 'none';
-  alert('Telefone salvo! Boa sorte 🍀');
 });
 </script>
 </body>
